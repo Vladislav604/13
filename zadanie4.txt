@@ -1,0 +1,96 @@
+from peewee import *
+
+# Создаем соединение с базой данных
+db = SqliteDatabase('university.db')
+
+# Определяем модели данных
+class BaseModel(Model):
+    class Meta:
+        database = db
+
+class Student(BaseModel):
+    id = AutoField()
+    name = CharField()
+    surname = CharField()
+    age = IntegerField()
+    city = CharField()
+
+class Course(BaseModel):
+    id = AutoField()
+    name = CharField()
+    time_start = CharField()
+    time_end = CharField()
+
+class StudentCourse(BaseModel):
+    student = ForeignKeyField(Student, backref='courses')
+    course = ForeignKeyField(Course, backref='students')
+
+# Инициализация базы данных
+class UniversityDB:
+    def __init__(self):
+        self.connect_db()
+        self.create_tables()
+        self.populate_tables()
+
+    def connect_db(self):
+        db.connect()
+
+    def create_tables(self):
+        db.create_tables([Student, Course, StudentCourse], safe=True)
+
+    def populate_tables(self):
+        if not Student.select().exists():
+            # Добавляем курсы
+            courses = [
+                {'name': 'python', 'time_start': '21.07.21', 'time_end': '21.08.21'},
+                {'name': 'java', 'time_start': '13.07.21', 'time_end': '16.08.21'}
+            ]
+            Course.insert_many(courses).execute()
+
+            # Добавляем студентов
+            students = [
+                {'name': 'Max', 'surname': 'Brooks', 'age': 24, 'city': 'Spb'},
+                {'name': 'John', 'surname': 'Stones', 'age': 15, 'city': 'Spb'},
+                {'name': 'Andy', 'surname': 'Wings', 'age': 45, 'city': 'Manhester'},
+                {'name': 'Kate', 'surname': 'Brooks', 'age': 34, 'city': 'Spb'}
+            ]
+            Student.insert_many(students).execute()
+
+            # Добавляем записи о курсах студентов
+            student_courses = [
+                {'student': 1, 'course': 1},
+                {'student': 2, 'course': 1},
+                {'student': 3, 'course': 1},
+                {'student': 4, 'course': 2}
+            ]
+            StudentCourse.insert_many(student_courses).execute()
+
+    def get_students_older_than_30(self):
+        return Student.select().where(Student.age > 30)
+
+    def get_students_on_python_course(self):
+        return (Student
+                .select()
+                .join(StudentCourse)
+                .join(Course)
+                .where(Course.name == 'python'))
+
+    def get_students_on_python_from_spb(self):
+        return (Student
+                .select()
+                .join(StudentCourse)
+                .join(Course)
+                .where((Course.name == 'python') & (Student.city == 'Spb')))
+
+    def close(self):
+        db.close()
+
+# Тестирование функционала
+if __name__ == '__main__':
+    db_instance = UniversityDB()
+
+    print("Студенты старше 30 лет:", [s.name for s in db_instance.get_students_older_than_30()])
+    print("Студенты на курсе Python:", [s.name for s in db_instance.get_students_on_python_course()])
+    print("Студенты на курсе Python из Spb:", [s.name for s in db_instance.get_students_on_python_from_spb()])
+
+    db_instance.close()
