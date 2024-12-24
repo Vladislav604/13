@@ -1,0 +1,43 @@
+import sqlite3
+
+# Подключаемся к базе данных (или создаем, если её нет)
+conn = sqlite3.connect('university.db')
+cursor = conn.cursor()
+
+# Создаем таблицу Students
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    surname TEXT NOT NULL,
+    age INTEGER,
+    city TEXT
+);
+''')
+
+# Создаем таблицу Courses
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Courses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    time_start TEXT,
+    time_end TEXT
+);
+''')
+
+# Создаем таблицу Student_courses
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Student_courses (
+    student_id INTEGER,
+    course_id INTEGER,
+    FOREIGN KEY (student_id) REFERENCES Students(id),
+    FOREIGN KEY (course_id) REFERENCES Courses(id),
+    PRIMARY KEY (student_id, course_id)
+);
+''')
+
+# Сохраняем изменения и закрываем соединение
+conn.commit()
+conn.close()
+
+print("База данных и таблицы успешно созданы!")
